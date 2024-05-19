@@ -10,6 +10,7 @@ import org.webrtc.MediaStreamTrack;
 import org.webrtc.PeerConnectionFactory;
 
 import io.flutter.plugin.common.BinaryMessenger;
+import org.webrtc.audio.AudioDeviceModule;
 
 /**
  * Provides interested components with access to the current application state.
@@ -29,6 +30,8 @@ public interface StateProvider {
   String getNextTrackUUID();
 
   PeerConnectionFactory getPeerConnectionFactory();
+
+  AudioDeviceModule getAudioDeviceModule();
 
   PeerConnectionObserver getPeerConnectionObserver(String peerConnectionId);
 

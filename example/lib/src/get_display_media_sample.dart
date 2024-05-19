@@ -96,6 +96,7 @@ class _GetDisplayMediaSampleState extends State<GetDisplayMediaSample> {
     try {
       var stream =
           await navigator.mediaDevices.getDisplayMedia(<String, dynamic>{
+            'audio': true,
         'video': selected_source_ == null
             ? true
             : {
@@ -107,6 +108,8 @@ class _GetDisplayMediaSampleState extends State<GetDisplayMediaSample> {
         print(
             'By adding a listener on onEnded you can: 1) catch stop video sharing on Web');
       };
+
+      // await initRenderers();
 
       _localStream = stream;
       _localRenderer.srcObject = _localStream;

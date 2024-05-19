@@ -81,6 +81,8 @@ import java.util.Map;
 
 import io.flutter.plugin.common.MethodChannel.Result;
 
+import org.webrtc.audio.AudioDeviceModule;
+
 /**
  * The implementation of {@code getUserMedia} extracted into a separate file in order to reduce
  * complexity and to (somewhat) separate concerns.
@@ -115,7 +117,7 @@ class GetUserMediaImpl {
     private final SparseArray<MediaRecorderImpl> mediaRecorders = new SparseArray<>();
     private AudioDeviceInfo preferredInput = null;
     private boolean isTorchOn;
-    private Intent mediaProjectionData = null;
+    public Intent mediaProjectionData = null;
 
     public void screenRequestPermissions(ResultReceiver resultReceiver) {
         mediaProjectionData = null;
@@ -492,6 +494,39 @@ class GetUserMediaImpl {
 
     void getDisplayMedia(
             final ConstraintsMap constraints, final Result result, final MediaStream mediaStream) {
+        final ArrayList<String> requestPermissions = new ArrayList<>();
+        if (constraints.hasKey("audio")) {
+            switch (constraints.getType("audio")) {
+                case Boolean:
+                    if (constraints.getBoolean("audio")) {
+                        requestPermissions.add(PERMISSION_AUDIO);
+                    }
+                    break;
+                case Map:
+                    requestPermissions.add(PERMISSION_AUDIO);
+                    break;
+                default:
+                    break;
+            }
+            requestPermissions(
+                    requestPermissions,
+                    /* successCallback */ new Callback() {
+                        @Override
+                        public void invoke(Object... args) {
+                            Log.d(TAG, "requestPermissions success");
+                        }
+                    },
+                    /* errorCallback */ new Callback() {
+                        @Override
+                        public void invoke(Object... args) {
+                            // According to step 10 Permission Failure of the
+                            // getUserMedia() algorithm, if the user has denied
+                            // permission, fail "with a new DOMException object whose
+                            // name attribute has the value NotAllowedError."
+                            resultError("getUserMedia", "DOMException, NotAllowedError", result);
+                        }
+                    });
+        }
         if (mediaProjectionData == null) {
             screenRequestPermissions(
                     new ResultReceiver(new Handler(Looper.getMainLooper())) {
@@ -513,6 +548,7 @@ class GetUserMediaImpl {
     }
 
     private void getDisplayMedia(final Result result, final MediaStream mediaStream, final Intent mediaProjectionData) {
+        this.mediaProjectionData = mediaProjectionData;
         /* Create ScreenCapture */
         MediaStreamTrack[] tracks = new MediaStreamTrack[1];
         VideoCapturer videoCapturer = null;
@@ -534,6 +570,33 @@ class GetUserMediaImpl {
         }
 
         PeerConnectionFactory pcFactory = stateProvider.getPeerConnectionFactory();
+
+        AudioDeviceModule audioDeviceModule = stateProvider.getAudioDeviceModule();
+        if (audioDeviceModule != null) {
+            if (mediaProjectionData != null) {
+                tracks = new MediaStreamTrack[2];
+
+                MediaProjectionManager mediaProjectionManager = (MediaProjectionManager)applicationContext.getSystemService("media_projection");
+                MediaProjection mediaProjection = mediaProjectionManager.getMediaProjection(-1, mediaProjectionData);
+
+                audioDeviceModule.setMediaProjection(mediaProjection);
+
+                MediaConstraints audioConstraints = new MediaConstraints();
+                String deviceId = null;
+                addDefaultAudioConstraints(audioConstraints);
+
+                AudioSource audioSource = pcFactory.createAudioSource(audioConstraints);
+
+
+                String trackId = stateProvider.getNextTrackUUID();
+                tracks[1] = pcFactory.createAudioTrack(trackId, audioSource);
+                tracks[1].setEnabled(true);
+            }
+            else {
+                audioDeviceModule.setMediaProjection(null);
+            }
+        }
+
         VideoSource videoSource = pcFactory.createVideoSource(true);
 
         String threadName = Thread.currentThread().getName() + "_texture_screen_thread";

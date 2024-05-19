@@ -35,7 +35,7 @@ public class OrientationAwareScreenCapturer implements VideoCapturer, VideoSink 
     private SurfaceTextureHelper surfaceTextureHelper;
     private CapturerObserver capturerObserver;
     private long numCapturedFrames = 0;
-    private MediaProjection mediaProjection;
+    public MediaProjection mediaProjection;
     private boolean isDisposed = false;
     private MediaProjectionManager mediaProjectionManager;
     private WindowManager windowManager;

@@ -143,7 +143,9 @@ public class MethodCallHandlerImpl implements MethodCallHandler, StateProvider {
     mPeerConnectionObservers.clear();
   }
   private void initialize(int networkIgnoreMask, boolean forceSWCodec, List<String> forceSWCodecList,
-  @Nullable ConstraintsMap androidAudioConfiguration) {
+  @Nullable ConstraintsMap androidAudioConfiguration
+//          , MediaProjection mediaProjection
+  ) {
     if (mFactory != null) {
       return;
     }
@@ -1299,6 +1301,10 @@ public class MethodCallHandlerImpl implements MethodCallHandler, StateProvider {
   @Override
   public PeerConnectionFactory getPeerConnectionFactory() {
     return mFactory;
+  }
+
+  public AudioDeviceModule getAudioDeviceModule() {
+    return audioDeviceModule;
   }
 
   @Override
